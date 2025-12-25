@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>जन्म कुंडली PDF Generator</title>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial Unicode MS', 'Nirmala UI', Arial, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            max-width: 1000px;
+            width: 100%;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #8B4513, #A0522D);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            display: flex;
+            min-height: 600px;
+        }
+        
+        .form-side {
+            flex: 1;
+            padding: 30px;
+            background: #fef9e7;
+            overflow-y: auto;
+            max-height: 600px;
+        }
+        
+        .preview-side {
+            flex: 1;
+            background: #f5f5f5;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .preview-canvas {
+            max-width: 100%;
+            max-height: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+        
+        .form-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border-left: 5px solid #8B4513;
+        }
+        
+        .section-title {
+            color: #8B4513;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-title i {
+            font-size: 1.5rem;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            font-weight: bold;
+            color: #5d4037;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0d6c2;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: white;
+            transition: all 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #8B4513;
+            box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.1);
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+        
+        th {
+            background: #8B4513;
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        
+        td {
+            border: 1px solid #e0d6c2;
+            padding: 10px;
+            text-align: center;
+            background: #fffaf0;
+        }
+        
+        .number-input {
+            width: 70px;
+            padding: 8px;
+            text-align: center;
+            border: 2px solid #D2691E;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+        }
+        
+        .buttons {
+            text-align: center;
+            margin: 30px 0 20px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #8B4513, #A0522D);
+            color: white;
+            border: none;
+            padding: 16px 50px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 10px 20px rgba(139, 69, 19, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(139, 69, 19, 0.4);
+            background: linear-gradient(135deg, #A0522D, #8B4513);
+        }
+        
+        .btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(139, 69, 19, 0.1);
+            border-radius: 10px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #8B4513;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: #f8f3e9;
+            border-top: 1px solid #e0d6c2;
+            color: #795548;
+            font-size: 0.9rem;
+        }
+        
+        .footer strong {
+            color: #8B4513;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .form-side, .preview-side {
+                max-height: none;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .btn {
+                padding: 14px 30px;
+                font-size: 1.1rem;
+            }
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #8B4513;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #A0522D;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-star-and-crescent"></i> जन्म कुंडली PDF Generator</h1>
+            <div class="subtitle">आपली कुंडली माहिती भरा आणि ताबडतोब PDF मिळवा</div>
+        </div>
+        
+        <div class="content">
+            <!-- Left Side: Form -->
+            <div class="form-side">
+                <!-- Basic Information -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-user-circle"></i>
+                        <span>मूलभूत माहिती</span>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="name"><i class="fas fa-signature"></i> पूर्ण नाव:</label>
+                        <input type="text" id="name" placeholder="आपले पूर्ण नाव टाका">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="dob"><i class="fas fa-calendar-alt"></i> जन्म तारीख:</label>
+                        <input type="date" id="dob">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="time"><i class="fas fa-clock"></i> जन्म वेळ:</label>
+                        <input type="time" id="time">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="day"><i class="fas fa-calendar-day"></i> वार:</label>
+                        <select id="day">
+                            <option value="">-- वार निवडा --</option>
+                            <option value="रविवार">रविवार</option>
+                            <option value="सोमवार">सोमवार</option>
+                            <option value="मंगळवार">मंगळवार</option>
+                            <option value="बुधवार">बुधवार</option>
+                            <option value="गुरुवार">गुरुवार</option>
+                            <option value="शुक्रवार">शुक्रवार</option>
+                            <option value="शनिवार">शनिवार</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="nakshatra"><i class="fas fa-star"></i> नक्षत्र:</label>
+                        <input type="text" id="nakshatra" placeholder="जन्म नक्षत्र">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="rashi"><i class="fas fa-sun"></i> राशी:</label>
+                        <select id="rashi">
+                            <option value="">-- राशी निवडा --</option>
+                            <option value="मेष">मेष</option>
+                            <option value="वृषभ">वृषभ</option>
+                            <option value="मिथुन">मिथुन</option>
+                            <option value="कर्क">कर्क</option>
+                            <option value="सिंह">सिंह</option>
+                            <option value="कन्या">कन्या</option>
+                            <option value="तूळ">तूळ</option>
+                            <option value="वृश्चिक">वृश्चिक</option>
+                            <option value="धनु">धनु</option>
+                            <option value="मकर">मकर</option>
+                            <option value="कुंभ">कुंभ</option>
+                            <option value="मीन">मीन</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Kundali Chart -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>कुंडली चार्ट (12 भाव)</span>
+                    </div>
+                    <p style="margin-bottom: 15px; color: #666; font-size: 0.9rem;">प्रत्येक भावासाठी राशी क्रमांक (1 ते 12) भरा:</p>
+                    
+                    <div class="table-container">
+                        <table id="housesTable">
+                            <thead>
+                                <tr>
+                                    <th>भाव</th><th>राशी क्र.</th>
+                                    <th>भाव</th><th>राशी क्र.</th>
+                                    <th>भाव</th><th>राशी क्र.</th>
+                                </tr>
+                            </thead>
+                            <tbody id="housesBody">
+                                <!-- Generated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Planets Position -->
+                <div class="form-section">
+                    <div class="section-title">
+                        <i class="fas fa-globe-asia"></i>
+                        <span>ग्रह स्थान</span>
+                    </div>
+                    <p style="margin-bottom: 15px; color: #666; font-size: 0.9rem;">प्रत्येक ग्रह कोणत्या भावात आहे ते भरा (1 ते 12):</p>
+                    
+                    <div class="table-container">
+                        <table id="planetsTable">
+                            <thead>
+                                <tr>
+                                    <th>ग्रह</th><th>भाव क्र.</th>
+                                    <th>ग्रह</th><th>भाव क्र.</th>
+                                </tr>
+                            </thead>
+                            <tbody id="planetsBody">
+                                <!-- Generated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Loading Indicator -->
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <div style="color: #8B4513; font-weight: bold; margin-top: 10px;">
+                        <i class="fas fa-cog fa-spin"></i> PDF तयार होत आहे... कृपया थांबा
+                    </div>
+                </div>
+                
+                <!-- Generate Button -->
+                <div class="buttons">
+                    <button class="btn" onclick="generatePDF()">
+                        <i class="fas fa-file-pdf"></i> PDF Download करा
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Right Side: Preview -->
+            <div class="preview-side">
+                <div id="previewContainer">
+                    <img src="" alt="Canva Template Preview" class="preview-canvas" id="canvaPreview" 
+                         style="display: none; max-width: 100%; max-height: 500px;">
+                    <div id="defaultPreview" style="text-align: center; color: #666;">
+                        <i class="fas fa-image" style="font-size: 100px; color: #e0d6c2; margin-bottom: 20px;"></i>
+                        <h3 style="color: #8B4513; margin-bottom: 10px;">कुंडली टेम्पलेट</h3>
+                        <p>तुमचे Canva डिझाइन येथे दिसेल</p>
+                        <button onclick="uploadTemplate()" style="margin-top: 20px; padding: 10px 20px; background: #8B4513; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            <i class="fas fa-upload"></i> टेम्पलेट अपलोड करा
+                        </button>
+                        <input type="file" id="templateUpload" accept="image/*" style="display: none;" onchange="loadTemplate(event)">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <div><strong>ज्योतिषाचार्य:</strong> श्री. अभयराव जोशी महाराज (वेळूकार)</div>
+            <div><strong>संपर्क:</strong> ९८६०२४०५३४</div>
+            <div style="margin-top: 10px; font-size: 0.8rem;">
+                PDF तयारी दिनांक: <span id="currentDate"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set current date
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('mr-IN');
+        
+        // Planets list
+        const planets = ['सूर्य', 'चंद्र', 'मंगळ', 'बुध', 'गुरु', 'शुक्र', 'शनि', 'राहु', 'केतु'];
+        
+        // Generate houses table (1-12)
+        function generateHousesTable() {
+            const housesBody = document.getElementById('housesBody');
+            let houseHTML = '';
+            
+            for (let i = 1; i <= 12; i += 2) {
+                houseHTML += '<tr>';
+                for (let j = 0; j < 2; j++) {
+                    const houseNum = i + j;
+                    if (houseNum <= 12) {
+                        houseHTML += `
+                            <td><strong>भाव ${houseNum}</strong></td>
+                            <td><input type="number" class="number-input" id="house${houseNum}" 
+                                   min="1" max="12" placeholder="${houseNum}" value="${houseNum}"></td>
+                        `;
+                    } else {
+                        houseHTML += '<td></td><td></td>';
+                    }
+                }
+                houseHTML += '</tr>';
+            }
+            housesBody.innerHTML = houseHTML;
+        }
+        
+        // Generate planets table
+        function generatePlanetsTable() {
+            const planetsBody = document.getElementById('planetsBody');
+            let planetHTML = '';
+            
+            for (let i = 0; i < planets.length; i += 2) {
+                planetHTML += '<tr>';
+                for (let j = 0; j < 2; j++) {
+                    const index = i + j;
+                    if (index < planets.length) {
+                        planetHTML += `
+                            <td><strong>${planets[index]}</strong></td>
+                            <td><input type="number" class="number-input" id="planet${planets[index]}" 
+                                   min="1" max="12" placeholder="भाव" value="${index + 1}"></td>
+                        `;
+                    } else {
+                        planetHTML += '<td></td><td></td>';
+                    }
+                }
+                planetHTML += '</tr>';
+            }
+            planetsBody.innerHTML = planetHTML;
+        }
+        
+        // Template upload functions
+        function uploadTemplate() {
+            document.getElementById('templateUpload').click();
+        }
+        
+        function loadTemplate(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById('canvaPreview');
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                    document.getElementById('defaultPreview').style.display = 'none';
+                    
+                    // Save to localStorage for future use
+                    localStorage.setItem('kundaliTemplate', e.target.result);
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Load saved template from localStorage
+        function loadSavedTemplate() {
+            const savedTemplate = localStorage.getItem('kundaliTemplate');
+            if (savedTemplate) {
+                const img = document.getElementById('canvaPreview');
+                img.src = savedTemplate;
+                img.style.display = 'block';
+                document.getElementById('defaultPreview').style.display = 'none';
+            }
+        }
+        
+        // Collect all form data
+        function collectFormData() {
+            const data = {
+                basic: {
+                    name: document.getElementById('name').value.trim(),
+                    dob: document.getElementById('dob').value,
+                    time: document.getElementById('time').value,
+                    day: document.getElementById('day').value,
+                    nakshatra: document.getElementById('nakshatra').value.trim(),
+                    rashi: document.getElementById('rashi').value
+                },
+                houses: {},
+                planets: {}
+            };
+            
+            // Collect houses data
+            for (let i = 1; i <= 12; i++) {
+                data.houses[i] = document.getElementById('house' + i).value || '';
+            }
+            
+            // Collect planets data
+            planets.forEach(planet => {
+                data.planets[planet] = document.getElementById('planet' + planet).value || '';
+            });
+            
+            return data;
+        }
+        
+        // Generate PDF
+        async function generatePDF() {
+            const data = collectFormData();
+            
+            // Validate basic info
+            if (!data.basic.name) {
+                alert('कृपया नाव टाका');
+                document.getElementById('name').focus();
+                return;
+            }
+            
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            
+            try {
+                await createBeautifulPDF(data);
+            } catch (error) {
+                console.error('PDF generation error:', error);
+                alert('PDF तयार करताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.');
+            } finally {
+                // Hide loading
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+        
+        // Create beautiful PDF
+        async function createBeautifulPDF(data) {
+            // Create PDF container
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.width = '794px'; // A4 width
+            pdfContainer.style.minHeight = '1123px'; // A4 height
+            pdfContainer.style.padding = '40px';
+            pdfContainer.style.backgroundColor = '#fef9e7';
+            pdfContainer.style.position = 'absolute';
+            pdfContainer.style.left = '-9999px';
+            pdfContainer.style.fontFamily = "'Arial Unicode MS', 'Nirmala UI', Arial, sans-serif";
+            
+            // Get template image
+            const templateImg = document.getElementById('canvaPreview');
+            const hasTemplate = templateImg.style.display !== 'none';
+            
+            // Format date
+            const formatDate = (dateStr) => {
+                if (!dateStr) return '--';
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('mr-IN');
+            };
+            
+            // Format time
+            const formatTime = (timeStr) => {
+                if (!timeStr) return '--';
+                return timeStr;
+            };
+            
+            // Rashi names mapping
+            const rashiNames = {
+                '1': 'मेष', '2': 'वृषभ', '3': 'मिथुन', '4': 'कर्क',
+                '5': 'सिंह', '6': 'कन्या', '7': 'तूळ', '8': 'वृश्चिक',
+                '9': 'धनु', '10': 'मकर', '11': 'कुंभ', '12': 'मीन'
+            };
+            
+            // PDF content
+            pdfContainer.innerHTML = `
+                ${hasTemplate ? `<img src="${templateImg.src}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.1; z-index: 1;">` : ''}
+                
+                <div style="position: relative; z-index: 2;">
+                    <!-- Header -->
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h1 style="color: #8B4513; font-size: 36px; margin-bottom: 10px;">जन्म कुंडली</h1>
+                        <div style="color: #A0522D; font-size: 20px; margin-bottom: 20px;">ज्योतिषशास्त्रीय माहिती</div>
+                        <div style="border-bottom: 3px solid #D2691E; width: 200px; margin: 0 auto;"></div>
+                    </div>
+                    
+                    <!-- Basic Information -->
+                    <div style="background: white; border-radius: 15px; padding: 25px; margin-bottom: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-left: 5px solid #8B4513;">
+                        <h2 style="color: #8B4513; font-size: 24px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                            <span style="background: #8B4513; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">१</span>
+                            मूलभूत माहिती
+                        </h2>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+                            <div>
+                                <div style="color: #5d4037; font-weight: bold; margin-bottom: 5px;">नाव</div>
+                                <div style="font-size: 18px; color: #3e2723; padding: 10px; background: #fffaf0; border-radius: 8px; border: 1px solid #e0d6c2;">
+                                    ${data.basic.name || '--'}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div style="color: #5d4037; font-weight: bold; margin-bottom: 5px;">जन्म तारीख</div>
+                                <div style="font-size: 18px; color: #3e2723; padding: 10px; background: #fffaf0; border-radius: 8px; border: 1px solid #e0d6c2;">
+                                    ${formatDate(data.basic.dob)}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div style="color: #5d4037; font-weight: bold; margin-bottom: 5px;">जन्म वेळ</div>
+                                <div style="font-size: 18px; color: #3e2723; padding: 10px; background: #fffaf0; border-radius: 8px; border: 1px solid #e0d6c2;">
+                                    ${formatTime(data.basic.time)}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div style="color: #5d4037; font-weight: bold; margin-bottom: 5px;">वार</div>
+                                <div style="font-size: 18px; color: #3e2723; padding: 10px; background: #fffaf0; border-radius: 8px; border: 1px solid #e0d6c2;">
+                                    ${data.basic.day || '--'}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div style="color: #5d4037; font-weight: bold; margin-bottom: 5px;">नक्षत्र</div>
+                                <div style="font-size: 18px; color: #3e2723; padding: 10px; background: #fffaf0; border-radius: 8px; border: 1px solid #e0d6c2;">
+                                    ${data.basic.nakshatra || '--'}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div style="color: #5d4037; font-weight: bold; margin-bottom: 5px;">राशी</div>
+                                <div style="font-size: 18px; color: #3e2723; padding: 10px; background: #fffaf0; border-radius: 8px; border: 1px solid #e0d6c2;">
+                                    ${data.basic.rashi || '--'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Kundali Chart -->
+                    <div style="background: white; border-radius: 15px; padding: 25px; margin-bottom: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-left: 5px solid #8B4513;">
+                        <h2 style="color: #8B4513; font-size: 24px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                            <span style="background: #8B4513; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">२</span>
+                            कुंडली चार्ट (12 भाव)
+                        </h2>
+                        
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; background: #fffaf0; border-radius: 10px; overflow: hidden;">
+                                <thead>
+                                    <tr>
+                                        ${Array.from({length: 12}, (_, i) => 
+                                            `<th style="background: #8B4513; color: white; padding: 12px; text-align: center; font-size: 16px;">भाव ${i+1}</th>`
+                                        ).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        ${Array.from({length: 12}, (_, i) => {
+                                            const houseNum = i + 1;
+                                            const rashiNum = data.houses[houseNum] || '';
+                                            const rashiName = rashiNames[rashiNum] || rashiNum || '--';
+                                            return `<td style="border: 1px solid #e0d6c2; padding: 15px; text-align: center; font-size: 16px; font-weight: bold; color: #5d4037;">${rashiName}</td>`;
+                                        }).join('')}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Planets Position -->
+                    <div style="background: white; border-radius: 15px; padding: 25px; margin-bottom: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-left: 5px solid #8B4513;">
+                        <h2 style="color: #8B4513; font-size: 24px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                            <span style="background: #8B4513; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">३</span>
+                            ग्रह स्थान
+                        </h2>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                            ${planets.map(planet => `
+                                <div style="background: #fffaf0; border-radius: 10px; padding: 15px; border: 1px solid #e0d6c2;">
+                                    <div style="color: #5d4037; font-weight: bold; margin-bottom: 8px; font-size: 16px;">${planet}</div>
+                                    <div style="font-size: 20px; color: #8B4513; text-align: center; font-weight: bold;">
+                                        भाव ${data.planets[planet] || '--'}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div style="text-align: center; margin-top: 40px; padding-top: 30px; border-top: 2px solid #D2691E;">
+                        <div style="color: #8B4513; font-size: 18px; margin-bottom: 10px; font-weight: bold;">
+                            ज्योतिषाचार्य: श्री. अभयराव जोशी महाराज (वेळूकार)
+                        </div>
+                        <div style="color: #795548; margin-bottom: 15px; font-size: 16px;">
+                            संपर्क: ९८६०२४०५३४ | बालाजी नगर, सिंभोरा रोड, मोर्शी, ता. मोर्शी जि. अमरावती
+                        </div>
+                        <div style="color: #666; font-size: 14px;">
+                            PDF तयारी दिनांक: ${new Date().toLocaleDateString('mr-IN')} ${new Date().toLocaleTimeString('mr-IN', {hour: '2-digit', minute:'2-digit'})}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(pdfContainer);
+            
+            // Convert to canvas
+            const canvas = await html2canvas(pdfContainer, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#fef9e7'
+            });
+            
+            // Remove container
+            document.body.removeChild(pdfContainer);
+            
+            // Create PDF
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4',
+                compress: true
+            });
+            
+            const imgData = canvas.toDataURL('image/jpeg', 1.0);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const imgWidth = canvas.width;
+            const imgHeight = canvas.height;
+            const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+            const imgX = (pdfWidth - imgWidth * ratio) / 2;
+            const imgY = 0;
+            
+            pdf.addImage(imgData, 'JPEG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+            
+            // Download PDF
+            const fileName = `जन्म_कुंडली_${data.basic.name.replace(/\s+/g, '_') || 'कुंडली'}_${new Date().toISOString().slice(0,10)}.pdf`;
+            pdf.save(fileName);
+            
+            // Success message
+            setTimeout(() => {
+                alert(`✅ PDF तयार झाली!\nफाइल नाव: ${fileName}`);
+            }, 500);
+        }
+        
+        // Fill sample data for testing
+        function fillSampleData() {
+            document.getElementById('name').value = 'राजेश पाटील';
+            document.getElementById('dob').value = '1990-06-15';
+            document.getElementById('time').value = '14:30';
+            document.getElementById('day').value = 'रविवार';
+            document.getElementById('nakshatra').value = 'रोहिणी';
+            document.getElementById('rashi').value = 'मेष';
+            
+            // For testing purposes only
+            console.log('Sample data filled for testing');
+        }
+        
+        // Initialize
+        window.onload = function() {
+            generateHousesTable();
+            generatePlanetsTable();
+            loadSavedTemplate();
+            
+            // Uncomment for testing
+            // fillSampleData();
+        };
+    </script>
+</body>
+</html>
