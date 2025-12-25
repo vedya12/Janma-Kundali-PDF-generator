@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Canva PDF Filler</title>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            background: #f0f0f0;
+        }
+        
+        .container {
+            display: inline-block;
+            position: relative;
+            margin: 20px auto;
+        }
+        
+        .template {
+            max-width: 800px;
+            width: 100%;
+            border: 2px solid #333;
+        }
+        
+        .input-field {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid red;
+            padding: 5px;
+            font-size: 16px;
+            text-align: center;
+            min-width: 100px;
+        }
+        
+        .controls {
+            margin: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            display: inline-block;
+        }
+        
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        .coord-display {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="coord-display" id="coords">X: 0, Y: 0</div>
+    
+    <div class="controls">
+        <h2>कुंडली PDF Filler</h2>
+        <input type="file" id="imageUpload" accept="image/*">
+        <button onclick="addField()">+ Add Text Field</button>
+        <button onclick="generatePDF()" style="background: #2196F3;">Download PDF</button>
+        <button onclick="saveTemplate()" style="background: #FF9800;">Save Template</button>
+        <button onclick="loadTemplate()" style="background: #9C27B0;">Load Template</button>
+    </div>
+    
+    <div class="container">
+        <img id="templateImage" src="" class="template" crossorigin="anonymous">
+        <!-- Input fields will be added here dynamically -->
+    </div>
+    
+    <script>
+        let fields = [];
+        let fieldCount = 0;
+        
+        // Load Canva template
+        document.getElementById('imageUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('templateImage').src = event.target.result;
+                    loadFieldsFromLocalStorage();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Track mouse position
+        document.getElementById('templateImage').addEventListener('mousemove', function(e) {
+            const rect = this.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            document.getElementById('coords').textContent = `X: ${Math.round(x)}, Y: ${Math.round(y)}`;
+        });
+        
+        // Add input field at clicked position
+        document.getElementById('templateImage').addEventListener('click', function(e) {
+            if (e.altKey) { // Hold Alt key to add field
+                addFieldAtPosition(e);
+            }
+        });
+        
+        function addField() {
+            alert('Hold ALT key and click on template where you want to add text field');
+        }
+        
+        function addFieldAtPosition(e) {
+            const container = document.querySelector('.container');
+            const rect = container.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            fieldCount++;
+            const fieldId = `field_${fieldCount}`;
+            
+            const field = document.createElement('input');
+            field.type = 'text';
+            field.id = fieldId;
+            field.className = 'input-field';
+            field.placeholder = 'येथे टाईप करा';
+            field.style.left = `${x}px`;
+            field.style.top = `${y}px`;
+            field.style.fontSize = '16px';
+            field.style.width = '150px';
+            
+            // Make draggable
+            makeDraggable(field);
+            
+            container.appendChild(field);
+            
+            // Store field data
+            fields.push({
+                id: fieldId,
+                x: x,
+                y: y,
+                width: 150,
+                height: 30,
+                value: '',
+                fontSize: 16
+            });
+            
+            // Update on input
+            field.addEventListener('input', function() {
+                updateFieldData(fieldId, this.value);
+            });
+            
+            // Context menu for editing
+            field.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                editField(fieldId);
+            });
+        }
+        
+        function makeDraggable(element) {
+            let isDragging = false;
+            let offsetX, offsetY;
+            
+            element.addEventListener('mousedown', function(e) {
+                if (e.button === 0) { // Left click
+                    isDragging = true;
+                    offsetX = e.clientX - element.getBoundingClientRect().left;
+                    offsetY = e.clientY - element.getBoundingClientRect().top;
+                    element.style.cursor = 'grabbing';
+                }
+            });
+            
+            document.addEventListener('mousemove', function(e) {
+                if (isDragging) {
+                    const container = document.querySelector('.container');
+                    const rect = container.getBoundingClientRect();
+                    
+                    let x = e.clientX - rect.left - offsetX;
+                    let y = e.clientY - rect.top - offsetY;
+                    
+                    // Keep within bounds
+                    x = Math.max(0, Math.min(x, rect.width - element.offsetWidth));
+                    y = Math.max(0, Math.min(y, rect.height - element.offsetHeight));
+                    
+                    element.style.left = `${x}px`;
+                    element.style.top = `${y}px`;
+                    
+                    // Update stored position
+                    const fieldId = element.id;
+                    const fieldIndex = fields.findIndex(f => f.id === fieldId);
+                    if (fieldIndex !== -1) {
+                        fields[fieldIndex].x = x;
+                        fields[fieldIndex].y = y;
+                    }
+                }
+            });
+            
+            document.addEventListener('mouseup', function() {
+                isDragging = false;
+                element.style.cursor = 'text';
+            });
+        }
+        
+        function editField(fieldId) {
+            const field = document.getElementById(fieldId);
+            const fieldIndex = fields.findIndex(f => f.id === fieldId);
+            
+            const fontSize = prompt('Font size (px):', fields[fieldIndex].fontSize);
+            const width = prompt('Width (px):', fields[fieldIndex].width);
+            const placeholder = prompt('Placeholder text:', field.placeholder);
+            
+            if (fontSize) {
+                field.style.fontSize = `${fontSize}px`;
+                fields[fieldIndex].fontSize = parseInt(fontSize);
+            }
+            
+            if (width) {
+                field.style.width = `${width}px`;
+                fields[fieldIndex].width = parseInt(width);
+            }
+            
+            if (placeholder) {
+                field.placeholder = placeholder;
+            }
+        }
+        
+        function updateFieldData(fieldId, value) {
+            const fieldIndex = fields.findIndex(f => f.id === fieldId);
+            if (fieldIndex !== -1) {
+                fields[fieldIndex].value = value;
+            }
+        }
+        
+        async function generatePDF() {
+            const container = document.querySelector('.container');
+            const image = document.getElementById('templateImage');
+            
+            if (!image.src) {
+                alert('कृपया प्रथम Canva टेम्पलेट अपलोड करा');
+                return;
+            }
+            
+            // Hide input borders for capture
+            const inputs = document.querySelectorAll('.input-field');
+            inputs.forEach(input => {
+                input.style.border = 'none';
+                input.style.background = 'transparent';
+            });
+            
+            // Capture as image
+            const canvas = await html2canvas(container, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: null
+            });
+            
+            // Restore borders
+            inputs.forEach(input => {
+                input.style.border = '2px solid red';
+                input.style.background = 'rgba(255, 255, 255, 0.9)';
+            });
+            
+            // Create PDF
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
+            });
+            
+            const imgData = canvas.toDataURL('image/jpeg', 1.0);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const imgWidth = canvas.width;
+            const imgHeight = canvas.height;
+            const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+            const imgX = (pdfWidth - imgWidth * ratio) / 2;
+            const imgY = 0;
+            
+            pdf.addImage(imgData, 'JPEG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+            pdf.save('कुंडली.pdf');
+        }
+        
+        function saveTemplate() {
+            const templateData = {
+                image: document.getElementById('templateImage').src,
+                fields: fields,
+                fieldCount: fieldCount
+            };
+            localStorage.setItem('kundaliTemplate', JSON.stringify(templateData));
+            alert('Template saved!');
+        }
+        
+        function loadTemplate() {
+            const saved = localStorage.getItem('kundaliTemplate');
+            if (saved) {
+                const templateData = JSON.parse(saved);
+                document.getElementById('templateImage').src = templateData.image;
+                fields = templateData.fields;
+                fieldCount = templateData.fieldCount;
+                
+                // Recreate fields
+                const container = document.querySelector('.container');
+                container.querySelectorAll('.input-field').forEach(el => el.remove());
+                
+                fields.forEach(fieldData => {
+                    const field = document.createElement('input');
+                    field.type = 'text';
+                    field.id = fieldData.id;
+                    field.className = 'input-field';
+                    field.placeholder = 'येथे टाईप करा';
+                    field.value = fieldData.value || '';
+                    field.style.left = `${fieldData.x}px`;
+                    field.style.top = `${fieldData.y}px`;
+                    field.style.width = `${fieldData.width}px`;
+                    field.style.fontSize = `${fieldData.fontSize}px`;
+                    
+                    makeDraggable(field);
+                    container.appendChild(field);
+                    
+                    field.addEventListener('input', function() {
+                        updateFieldData(fieldData.id, this.value);
+                    });
+                    
+                    field.addEventListener('contextmenu', function(e) {
+                        e.preventDefault();
+                        editField(fieldData.id);
+                    });
+                });
+                
+                alert('Template loaded!');
+            } else {
+                alert('No saved template found');
+            }
+        }
+        
+        // Load on startup if exists
+        window.addEventListener('load', function() {
+            const saved = localStorage.getItem('kundaliTemplate');
+            if (saved) {
+                if (confirm('Saved template found. Load it?')) {
+                    loadTemplate();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
